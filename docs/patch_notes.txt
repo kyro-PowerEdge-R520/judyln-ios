@@ -1,0 +1,114 @@
+PATCH NOTES: boot-g7em-gpu8-patched.img
+========================================
+
+Source image: C:\Users\kyro\Downloads\judyln-ios\work\next-gen\boot-g7em-20j-full.img
+  Size:   18,128,896 bytes
+  SHA-256: 376ecdfcbd667f92029c44f86207bcd693eade70086d3bfcff2faf6abe9e1dce
+  boot.img v1 SHA-1 ID (@0x240): 17eff122fa155312e4fb96cc789fee144f68f94c
+
+Patched image: C:\Users\kyro\Downloads\judyln-ios\work\next-gen\boot-g7em-gpu8-patched.img
+  Size:   18,128,896 bytes
+  SHA-256: c1b47432001bc3e661fb050d358d595f172d9824baf764e860f24c5dfb1ffb93
+  boot.img v1 SHA-1 ID (@0x240): ee5187e34720c5e550deea819845a19db7b6d059
+  Total differing bytes vs source: 24 bytes (4 bytes code @0x0bbfa44 + 20 bytes SHA-1 ID @0x240)
+
+Golden images verification (read-only):
+  boot_a-cpu-ui-touch.img:         766a88577c208af62583d199fa5dbd8f46811342aa109db5c334a5d38607b3e7 (MATCH == 766a88577c208af62583d199fa5dbd8f46811342aa109db5c334a5d38607b3e7)
+  boot_a-gpu8-verbose-backup.img:  8a798e5f40e0562326e44b80d2c4cc07b616949274d8e055aa620d798a98f4fb
+
+Preserved Boot Configuration & Payload Checks:
+  SWEETXNU.cmdline (@0x130100): 60 sweettouch=1 g7touch_bar=0 g7touch_init=2 sweetusb=0 cpus=8 sweetsmp=1 g7perf=100 sweetbattery=2 g7gpu=8 sweetfb_noconsole=1
+  seg[10] (G7Zap ELF): va=0xfffffe0008508000 vs=0x4000 img_off=0x11429e0 fz=0x37b0
+    ELF32 header: magic=b'\x7fELF' type=2 machine=0xa4 entry=0x00005000 phnum=3
+  ADT /chosen/memory-map/G7Zap offset: 0x1c4d97
+
+Root Cause Analysis (step2a_out.txt, step2a_routes.txt, check_route18.txt):
+----------------------------------------------------------------------------
+1. Call chain for step 4 / phase 1 / route_status:
+   - _g7_adreno_bringup (0x0bc1544, va=0xfffffe0007a95134) calls _NativeAdrenoGpuContextBringupRoutes (0x0bc4e64)
+     which invokes NativeAdrenoGpuContext::bringUp (0x0bc3d90).
+   - At step 4 (Attach), NativeAdrenoGpuContext::bringUp calls NativeAdrenoSmmuContext::attach (0x0bc90fc),
+     which invokes _ArmSmmu4KAttachStreams (0x0bc00c8, va=0xfffffe0007a93cb8) and writes w0 to
+     [x20, #0x284] (0x0bc916c) -> NativeAdrenoGpuContext::bringUp copies [x19, #0x484] to report->route_status
+     ([x28, #0x34] at 0x0bc4110..0x0bc4114), printed by snprintf (0x0bc1930 -> [sp, #0x114]) as "route %u".
+   - On failure of _ArmSmmu4KAttachStreams, NativeAdrenoSmmuContext::attach returns 0xe00002c2 + 8 = 0xe00002ca
+     (kIOReturnIOError).
+
+2. Why _ArmSmmu4KAttachStreams failed in phase 1 with ID0 = 0x40016605:
+   - At phase = 1 (0x0bc0188), _ArmSmmu4KAttachStreams calls _global (0x0bbf95c, va=0xfffffe0007a9354c) at 0x0bc0190.
+   - _global reads SMMU_IDR0 (0x20) -> 0x40016605 (NUMSMRG = 5 stream match groups, S1TS = 1, EXIDS = 0, SMS bit 27 = 0).
+   - At 0x0bbfa40..0x0bbfa44 (va=0xfffffe0007a93630..0x07a93634):
+       0x0bbfa40: b94002a8  ldr w8, [x21]
+       0x0bbfa44: 36d80108  tbz w8, #27, 0xfffffe0007a93654  (returns w0 = 6 = ArmSmmu4KUnsupported)
+   - Because hardware ID0 = 0x40016605 has bit 27 (SMS) clear under QHEE/TZ despite 5 SMR groups present,
+     _global unconditionally fails here in phase 1 and aborts attachment before context observation or _scan runs.
+   - Note on "route 18": Every status return inside _ArmSmmu4KAttachStreams and its callees (_global,
+     _ArmSmmu4KObserveOwnedContext, _scan) in boot-g7em-20j-full.img uses ArmSmmu4KStatus enum values 0..11
+     (0x0..0xb; no mov/return of 18 / 0x12 exists anywhere in 0xfffffe0007a8e000..0xfffffe0007a9e000), meaning
+     boot-g7em-20j-full.img hits 0x0bbfa44 first in phase 1 (enum 6 ArmSmmu4KUnsupported; "route 18" matches
+     either an earlier binary revision or console OCR of route 10/6/8 at phase 1).
+
+3. Initial S2CR (0x200ff vs 0x20000) state check in _scan (ArmSmmu4KStreams.c):
+   - Verified at 0x0bbfcdc..0x0bbfcf0 (va=0xfffffe0007a938cc..0x07a938e0):
+       0x0bbfce0: 121601ad  and w13, w13, #0x400       ; valid_s2cr(id0) (0 when EXIDS=0)
+       0x0bbfce4: 52185dad  eor w13, w13, #0xffffff00  ; ~0xff & ~valid_s2cr(id0) -> 0xffffff00
+       0x0bbfce8: 0a0b01ab  and w11, w13, w11          ; strips cbndx [7:0] from s2cr
+       0x0bbfcec: 7140817f  cmp w11, #0x20000          ; FAULT check: 0x200ff & 0xffffff00 == 0x20000 (PASSES)
+   - Note: While UniXNU source ArmSmmu4KStreams.c:43 lacks `~0xff`, the compiled kernel in boot-g7em-20j-full.img
+     ALREADY has `eor w13, w13, #0xffffff00` at 0x0bbfce4, so S2CR = 0x200ff is already accepted. No patch needed at _scan.
+
+4. Single-instruction MMIO accessors (ArmSmmu4KMmio.c vs 0236-beryllium-gpu-mmio-asm-accessors.patch):
+   - Verified in _read32 (0x0bbe5d0..0x0bbe630), _read64 (0x0bbe634..0x0bbe694), _write32 (0x0bbe698..0x0bbe6f4),
+     and _write64 (0x0bbe6f8..0x0bbe754):
+       0x0bbe628: b8616928  ldr w8, [x9, x1, lsl]
+       0x0bbe68c: f8616928  ldr x8, [x9, x1, lsl]
+       0x0bbe6e8: b8216902  str w2, [x8, x1, lsl]
+       0x0bbe748: f8216902  str x2, [x8, x1, lsl]
+   - All MMIO accesses use non-writeback register offset addressing (ESR.ISV = 1 valid syndrome under QHEE)
+     and already succeeded in Step 3 (_ArmSmmu4KProgramDisabledContext -> program 0). No MMIO patch needed.
+
+Applied Modifications Table:
+--------------------------
+File Offset | VA                 | Original   | Patched    | Instruction Change                         | Purpose
+------------+--------------------+------------+------------+--------------------------------------------+----------------------------------------------------
+0x00000240  | (header + 0x240)   | 17eff122fa155312.. | ee5187e34720c5e5.. | SHA-1 digest recomputed (20 bytes)         | Android boot.img v1 SHA-1 ID for updated ramdisk
+0x00bbfa44  | 0xfffffe0007a93634 | 36d80108   | d503201f   | tbz w8, #27, 0xfffffe0007a93654 -> nop     | Bypass ID0.SMS==0 check on ID0=0x40016605 in _global
+
+Post-Patch Verification (_global @ 0x0bbfa38..0x0bbfaa4 in patched image):
+  0x0bbfa38 (0xfffffe0007a93628): 52800100  movz w0, #0x8
+  0x0bbfa3c (0xfffffe0007a9362c): 17ffffd9  b 0xfffffe0007a93590
+  0x0bbfa40 (0xfffffe0007a93630): b94002a8  ldr w8, [x21]
+  0x0bbfa44 (0xfffffe0007a93634): d503201f  nop  <-- PATCHED
+  0x0bbfa48 (0xfffffe0007a93638): 92401d09  and x9, x8, #0xff
+  0x0bbfa4c (0xfffffe0007a9363c): 340000c9  cbz w9, 0xfffffe0007a93654
+  0x0bbfa50 (0xfffffe0007a93640): 5281800a  movz w10, #0xc00
+  0x0bbfa54 (0xfffffe0007a93644): aa090949  orr x9, x10, x9, lsl #2
+  0x0bbfa58 (0xfffffe0007a93648): f940066a  ldr x10, [x19, #0x8]
+  0x0bbfa5c (0xfffffe0007a9364c): eb09015f  cmp x10, x9
+  0x0bbfa60 (0xfffffe0007a93650): 54000062  b.cs 0xfffffe0007a9365c
+  0x0bbfa64 (0xfffffe0007a93654): 528000c0  movz w0, #0x6
+  0x0bbfa68 (0xfffffe0007a93658): 17ffffce  b 0xfffffe0007a93590
+  0x0bbfa6c (0xfffffe0007a9365c): b94002c9  ldr w9, [x22]
+  0x0bbfa70 (0xfffffe0007a93660): 528080ea  movz w10, #0x407
+  0x0bbfa74 (0xfffffe0007a93664): 0a0a012a  and w10, w9, w10
+  0x0bbfa78 (0xfffffe0007a93668): 7110195f  cmp w10, #0x406
+  0x0bbfa7c (0xfffffe0007a9366c): 54000121  b.ne 0xfffffe0007a93690
+  0x0bbfa80 (0xfffffe0007a93670): 53037d29  lsr w9, w9, #3
+  0x0bbfa84 (0xfffffe0007a93674): 4a482128  eor w8, w9, w8, lsr #8
+  0x0bbfa88 (0xfffffe0007a93678): 370000c8  tbnz w8, #0, 0xfffffe0007a93690
+  0x0bbfa8c (0xfffffe0007a9367c): b94002e8  ldr w8, [x23]
+  0x0bbfa90 (0xfffffe0007a93680): 52800169  movz w9, #0xb
+  0x0bbfa94 (0xfffffe0007a93684): 7100011f  cmp w8, #0x0
+  0x0bbfa98 (0xfffffe0007a93688): 1a8903e0  csel w0, wzr, w9, eq
+  0x0bbfa9c (0xfffffe0007a9368c): 17ffffc1  b 0xfffffe0007a93590
+  0x0bbfaa0 (0xfffffe0007a93690): 528000e0  movz w0, #0x7
+  0x0bbfaa4 (0xfffffe0007a93694): 17ffffbf  b 0xfffffe0007a93590
+
+Preserved _scan S2CR FAULT mask check (0x0bbfcdc..0x0bbfcf4 in patched image):
+  0x0bbfcdc (0xfffffe0007a938cc): 531e754d  lsl w13, w10, #2
+  0x0bbfce0 (0xfffffe0007a938d0): 121601ad  and w13, w13, #0x400
+  0x0bbfce4 (0xfffffe0007a938d4): 52185dad  eor w13, w13, #0xffffff00
+  0x0bbfce8 (0xfffffe0007a938d8): 0a0b01ab  and w11, w13, w11
+  0x0bbfcec (0xfffffe0007a938dc): 7140817f  cmp w11, #0x20000
+  0x0bbfcf0 (0xfffffe0007a938e0): 54000101  b.ne 0xfffffe0007a93900
+  0x0bbfcf4 (0xfffffe0007a938e4): 34fff4cc  cbz w12, 0xfffffe0007a9377c

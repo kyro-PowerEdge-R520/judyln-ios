@@ -1,0 +1,4 @@
+# HakiOS defconfig for LG G7 ThinQ (judyln, SDM845, devices/judyln)
+#include common_defconfig
+#include sdm845.config
+#include judyln.config

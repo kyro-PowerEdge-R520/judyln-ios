@@ -1,0 +1,50 @@
+
+=== 'g7gpu' (str=0x1c4d7e) -> xref 0x633a98 (0xfffffe0007507688) ===
+  0x0633a90 (0xfffffe0007507680): a9037bfd  0xa9037bfd
+  0x0633a94 (0xfffffe0007507684): 9100c3fd  add x29, x31, #0x30
+  0x0633a98 (0xfffffe0007507688): b0ffdc80  adrp x0, 0xfffffe0007098000
+  0x0633a9c (0xfffffe000750768c): 9125d800  add x0, x0, #0x976
+  0x0633aa0 (0xfffffe0007507690): d0005c13  adrp x19, 0xfffffe0008089000
+  0x0633aa4 (0xfffffe0007507694): 9117c273  add x19, x19, #0x5f0
+  0x0633aa8 (0xfffffe0007507698): aa1303e1  0xaa1303e1
+  0x0633aac (0xfffffe000750769c): 52800082  movz w2, #0x4, lsl #0
+  0x0633ab0 (0xfffffe00075076a0): 94168975  bl 0xfffffe0007aa9c74
+  0x0633ab4 (0xfffffe00075076a4): b9400268  ldr w8, [x19, #0x0]
+  0x0633ab8 (0xfffffe00075076a8): 340004a8  cbz w8, 0xfffffe000750773c
+  0x0633abc (0xfffffe00075076ac): a9017fff  0xa9017fff
+
+=== 'IOAcceleratorES' (str=0x27d6ad) -> xref 0xbc0764 (0xfffffe0007a94354) ===
+  0x0bc075c (0xfffffe0007a9434c): a9bf7bfd  0xa9bf7bfd
+  0x0bc0760 (0xfffffe0007a94350): 910003fd  add x29, x31, #0x0
+  0x0bc0764 (0xfffffe0007a94354): b0ffb5e1  adrp x1, 0xfffffe0007151000
+  0x0bc0768 (0xfffffe0007a94358): 910a9421  add x1, x1, #0x2a5
+  0x0bc076c (0xfffffe0007a9435c): f0000de2  adrp x2, 0xfffffe0007c53000
+  0x0bc0770 (0xfffffe0007a94360): 9113a042  add x2, x2, #0x4e8
+  0x0bc0774 (0xfffffe0007a94364): 52801103  movz w3, #0x88, lsl #0
+  0x0bc0778 (0xfffffe0007a94368): 97fb49dd  bl 0xfffffe0007966adc
+  0x0bc077c (0xfffffe0007a9436c): d0ffc108  adrp x8, 0xfffffe00072b6000
+  0x0bc0780 (0xfffffe0007a94370): 911b8108  add x8, x8, #0x6e0
+
+=== 'IOAcceleratorES' (str=0x27d6ad) -> xref 0xbc0830 (0xfffffe0007a94420) ===
+  0x0bc0828 (0xfffffe0007a94418): a9bf7bfd  0xa9bf7bfd
+  0x0bc082c (0xfffffe0007a9441c): 910003fd  add x29, x31, #0x0
+  0x0bc0830 (0xfffffe0007a94420): b0ffb5e1  adrp x1, 0xfffffe0007151000
+  0x0bc0834 (0xfffffe0007a94424): 910a9421  add x1, x1, #0x2a5
+  0x0bc0838 (0xfffffe0007a94428): f0000de2  adrp x2, 0xfffffe0007c53000
+  0x0bc083c (0xfffffe0007a9442c): 9113a042  add x2, x2, #0x4e8
+  0x0bc0840 (0xfffffe0007a94430): 52801103  movz w3, #0x88, lsl #0
+  0x0bc0844 (0xfffffe0007a94434): 97fb49aa  bl 0xfffffe0007966adc
+  0x0bc0848 (0xfffffe0007a94438): d0ffc108  adrp x8, 0xfffffe00072b6000
+  0x0bc084c (0xfffffe0007a9443c): 911b8108  add x8, x8, #0x6e0
+
+=== 'IOAcceleratorES' (str=0x27d6ad) -> xref 0xbc2238 (0xfffffe0007a95e28) ===
+  0x0bc2230 (0xfffffe0007a95e20): 90000e53  adrp x19, 0xfffffe0007c5d000
+  0x0bc2234 (0xfffffe0007a95e24): 910b0273  add x19, x19, #0x2c0
+  0x0bc2238 (0xfffffe0007a95e28): 90ffb5e1  adrp x1, 0xfffffe0007151000
+  0x0bc223c (0xfffffe0007a95e2c): 910a9421  add x1, x1, #0x2a5
+  0x0bc2240 (0xfffffe0007a95e30): d0000de2  adrp x2, 0xfffffe0007c53000
+  0x0bc2244 (0xfffffe0007a95e34): 9113a042  add x2, x2, #0x4e8
+  0x0bc2248 (0xfffffe0007a95e38): aa1303e0  0xaa1303e0
+  0x0bc224c (0xfffffe0007a95e3c): 52801103  movz w3, #0x88, lsl #0
+  0x0bc2250 (0xfffffe0007a95e40): 97fb4327  bl 0xfffffe0007966adc
+  0x0bc2254 (0xfffffe0007a95e44): b0ffc108  adrp x8, 0xfffffe00072b6000
