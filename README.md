@@ -25,3 +25,5 @@ See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for upstream attributions
 ## License
 
 Original scripts and utilities in this repository are licensed under the **GNU General Public License v3.0 or later** (`GPL-3.0-or-later`). See [`LICENSE`](LICENSE) for the full text.
+<img width="3072" height="4096" alt="iOS on an LG G7 ThinQ
+
