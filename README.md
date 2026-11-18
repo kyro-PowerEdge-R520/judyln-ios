@@ -1,6 +1,7 @@
 # judyln-ios
 
 Original helper scripts, binary analysis/patching utilities, device configs, and technical notes for experimenting with XNU/iOS bring-up on the LG G7 ThinQ (`LMG710EM` / `judyln`, Qualcomm SDM845).
+**NOTE: THIS PROJECT WAS HEAVILY ASSISTED WITH THE USE OF AI. If you do not like this, ..don't interact.**
 
 > **Note:** This repository contains **only** original scripts, non-proprietary device configuration files, and documentation. Proprietary firmware blobs, boot images, IPSWs, KDZs, and device partition dumps are strictly excluded.
 
